@@ -6,10 +6,11 @@ library(readr)
 library(shinycssloaders)
 library(cowplot)
 library(ggplot2)
+library(magick)
 
 contact_elevations <-read.csv("./contact_elevations.csv") |> tibble()
 model_results<-read.csv("./model_results.csv") |> tibble()
-loc_keys<-read.csv("./location_keys.csv") |> tibble()
+
 
 longitude<-read_csv("https://seoflow.wyo.gov/Data/ExportList?interval=Latest&parameters[0]=24&value=Location_9&type=Location&subValue=null&subValueType=null&refPeriod=&legend=null&utcOffset=420&date=2023-02-16&endDate=null&calendar=1&wkid=4326&exportType=csv&filter=~&sort=Sequence-desc", 
                     skip=1) |> clean_names() |> dplyr::select("location","value") |> rename(longitude=value) |> unique() |> tibble()
@@ -214,21 +215,29 @@ server <- function(session, input, output) {
                              geom_hline(yintercept = contacts() |> filter(contact_type=="ogallala_arikaree") |> select(value_ref_surf) |> pull(), linetype="dotdash", color = "pink", size=1) +
                              geom_hline(yintercept = contacts() |> filter(contact_type=="arikaree_white_river") |> select(value_ref_surf) |> pull(), linetype="dotted", color = "darkorange", size=1) +
                              geom_hline(yintercept = contacts() |> filter(contact_type=="white_river_lance") |> select(value_ref_surf) |> pull(), linetype="longdash", color = "sienna", size=1)) +
-        draw_image("./SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
+        draw_image("https://raw.githubusercontent.com/tmolone1/seo_mon_wells/main/Hydrographs/data/SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
     }
     else {
     ggdraw() + draw_plot(p()) +
-      draw_image("./SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
+      draw_image("https://raw.githubusercontent.com/tmolone1/seo_mon_wells/main/Hydrographs/data/SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
     }
     })
   
   contacts<-reactive({
-    contact_elevations |> filter(sheets== loc_keys |> filter(V1==input$filter2) |> select(V2) |> pull())
+    contact_elevations |> filter(sheets %in% c(input$filter2,0))
     })
   
   # Table of selected dataset ----
-  output$table <- DT::renderDT(server=FALSE, {
-    DT::datatable(re2(),
+  output$table <- DT::renderDT(re2())
+  
+  output$contacts<-DT::renderDT(contacts())
+  
+  output$model<-DT::renderDT(model_results  |> filter(well== loc_keys |> filter(V1==input$filter2) |> select(V2) |> pull(), scenario==input$scenario_selection))
+  
+  output$string<-renderText(recorded_query_string())
+  
+  output$table2 <- DT::renderDT(server=FALSE, {
+    DT::datatable(viewtbl(),
                   extensions = 'Buttons',
                   style = 'bootstrap',
                   options = list(
@@ -247,17 +256,10 @@ server <- function(session, input, output) {
                              exportOptions = list(
                                modifier = list(page = "all")
                              ))
-                                ))
-                    )
+                      ))
+    )
   })
   
-  output$contacts<-DT::renderDT(contacts())
-  
-  output$model<-DT::renderDT(model_results  |> filter(well== loc_keys |> filter(V1==input$filter2) |> select(V2) |> pull(), scenario==input$scenario_selection))
-  
-  output$string<-renderText(recorded_query_string())
-  
-  output$table2<-DT::renderDT(viewtbl())
   output$plot<-renderPlot(draw(), width = 980, height= 720)
   
   output$plotsimple<-renderPlot(ggplot(plotdata(), aes(x = timestamp_utc, y = value_ft)) +
