@@ -1,0 +1,12 @@
+library(shiny)
+library(dplyr)
+library(DT)
+library(janitor)
+library(readr)
+library(shinycssloaders)
+library(cowplot)
+library(ggplot2)
+
+contact_elevations<-read.csv("./contact_elevations.csv") |> tibble()
+model_results<-read.csv("./model_results.csv") |> tibble()
+loc_keys<-read.csv("./location_keys.csv") |> tibble()
