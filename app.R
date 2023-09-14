@@ -83,19 +83,11 @@ ui <- fluidPage("Wyoming State Engineer's Office Ground Water Monitoring Wells",
         tabPanel("Plot",
                  # Button
                  downloadButton("exportplot", "Download Plot as PDF"),
-                 checkboxInput("plot_geo", "Plot Geology", value=FALSE),
-                 checkboxInput("plot_simulations", "Plot Simulations", value=FALSE),
-                 withSpinner(plotOutput("plot"))
-                 ),
+                 withSpinner(plotOutput("plot"))),
         tabPanel("Table",
       DT::dataTableOutput("table"),
       textOutput('string'),
-      withSpinner(DT::dataTableOutput("table2"))),
-      tabPanel("Geology",
-               DT::dataTableOutput("contacts")),
-      tabPanel("Simulations",
-               radioButtons("scenario_selection", "Select simulation scenario", choices = unique(model_results$scenario), selected="baseline"),
-               DT::dataTableOutput("model"))
+      withSpinner(DT::dataTableOutput("table2")))
       )
     )
     
@@ -209,18 +201,8 @@ server <- function(session, input, output) {
   })
   
   draw<- reactive({
-    if (input$plot_geo == TRUE) {
-      ggdraw() + draw_plot(p() + 
-                             geom_hline(yintercept = 0, linetype="dashed", color = "brown", size=1) +
-                             geom_hline(yintercept = contacts() |> filter(contact_type=="ogallala_arikaree") |> select(value_ref_surf) |> pull(), linetype="dotdash", color = "pink", size=1) +
-                             geom_hline(yintercept = contacts() |> filter(contact_type=="arikaree_white_river") |> select(value_ref_surf) |> pull(), linetype="dotted", color = "darkorange", size=1) +
-                             geom_hline(yintercept = contacts() |> filter(contact_type=="white_river_lance") |> select(value_ref_surf) |> pull(), linetype="longdash", color = "sienna", size=1)) +
-        draw_image("https://raw.githubusercontent.com/tmolone1/seo_mon_wells/main/Hydrographs/data/SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
-    }
-    else {
     ggdraw() + draw_plot(p()) +
       draw_image("https://raw.githubusercontent.com/tmolone1/seo_mon_wells/main/Hydrographs/data/SEO_logo_BW.png", x = 0.37, y= -0.36, scale =.11, vjust=0,hjust=0)
-    }
     })
   
   contacts<-reactive({
